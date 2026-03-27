@@ -2,6 +2,10 @@ import { Router, Request, Response } from 'express';
 import companyRoutes from './companyRoutes';
 import userRoutes from './userRoutes';
 import authRoutes from './authRoutes';
+import productRoutes from './productRoutes';
+import categoryRoutes from './categoryRoutes';
+import supplierRoutes from './supplierRoutes';
+import inventoryMovementRoutes from './inventory-movementRoutes';
 
 const router = Router();
 
@@ -20,5 +24,9 @@ router.get('/health', (_req: Request, res: Response) => {
 router.use('/auth', authRoutes);
 router.use('/companies', companyRoutes);
 router.use('/users', userRoutes);
+router.use('/products', productRoutes);
+router.use('/categories', categoryRoutes);
+router.use('/suppliers', supplierRoutes);
+router.use('/inventory-movements', inventoryMovementRoutes);
 
 export default router;
