@@ -1,0 +1,129 @@
+<div class="register-company">
+  <div class="register-company__card">
+    <div class="register-company__header">
+      <h1>Registrar empresa</h1>
+      <p>Crea tu cuenta de empresa y el usuario administrador</p>
+    </div>
+
+    <form class="register-company__form" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <div class="section-title">Datos de la empresa</div>
+
+      <div class="form-group">
+        <label for="company_name">Nombre de la empresa</label>
+        <input
+          id="company_name"
+          type="text"
+          formControlName="company_name"
+          placeholder="Mi Empresa S.L."
+        />
+        @if (
+          registerForm.controls.company_name.touched && registerForm.controls.company_name.invalid
+        ) {
+          <small class="error-text">El nombre de la empresa es obligatorio</small>
+        }
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="tax_id">CIF / NIF</label>
+          <input id="tax_id" type="text" formControlName="tax_id" placeholder="B12345678" />
+        </div>
+
+        <div class="form-group">
+          <label for="company_email">Email empresa</label>
+          <input
+            id="company_email"
+            type="email"
+            formControlName="company_email"
+            placeholder="info@empresa.com"
+          />
+          @if (
+            registerForm.controls.company_email.touched &&
+            registerForm.controls.company_email.invalid
+          ) {
+            <small class="error-text">Introduce un email válido</small>
+          }
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="phone">Teléfono</label>
+          <input id="phone" type="text" formControlName="phone" placeholder="600123123" />
+        </div>
+
+        <div class="form-group">
+          <label for="address">Dirección</label>
+          <input
+            id="address"
+            type="text"
+            formControlName="address"
+            placeholder="Calle Principal 123"
+          />
+        </div>
+      </div>
+
+      <div class="section-title">Administrador</div>
+
+      <div class="form-group">
+        <label for="admin_name">Nombre del administrador</label>
+        <input id="admin_name" type="text" formControlName="admin_name" placeholder="Juan Pérez" />
+        @if (registerForm.controls.admin_name.touched && registerForm.controls.admin_name.invalid) {
+          <small class="error-text">El nombre del administrador es obligatorio</small>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="admin_email">Email del administrador</label>
+        <input
+          id="admin_email"
+          type="email"
+          formControlName="admin_email"
+          placeholder="admin@empresa.com"
+        />
+        @if (
+          registerForm.controls.admin_email.touched && registerForm.controls.admin_email.invalid
+        ) {
+          <small class="error-text">Introduce un email válido</small>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="admin_password">Contraseña</label>
+        <input
+          id="admin_password"
+          type="password"
+          formControlName="admin_password"
+          placeholder="Mínimo 6 caracteres"
+        />
+        @if (
+          registerForm.controls.admin_password.touched &&
+          registerForm.controls.admin_password.invalid
+        ) {
+          <small class="error-text">La contraseña debe tener al menos 6 caracteres</small>
+        }
+      </div>
+
+      @if (successMessage) {
+        <div class="server-success">
+          {{ successMessage }}
+        </div>
+      }
+
+      @if (errorMessage) {
+        <div class="server-error">
+          {{ errorMessage }}
+        </div>
+      }
+
+      <button type="submit" [disabled]="isLoading">
+        {{ isLoading ? 'Registrando...' : 'Registrar empresa' }}
+      </button>
+
+      <div class="register-company__footer">
+        <span>¿Ya tienes cuenta?</span>
+        <a routerLink="/login">Inicia sesión</a>
+      </div>
+    </form>
+  </div>
+</div>

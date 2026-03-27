@@ -1,0 +1,44 @@
+.sidebar {
+  background: #111827;
+  color: #ffffff;
+  padding: 24px 18px;
+  display: flex;
+  height: 100dvh;
+  flex-direction: column;
+  gap: 32px;
+
+  &__brand {
+    h2 {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    span {
+      color: #9ca3af;
+      font-size: 14px;
+    }
+  }
+
+  &__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    a {
+      padding: 12px 14px;
+      border-radius: 12px;
+      color: #d1d5db;
+      transition: 0.2s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
+      }
+
+      &.active {
+        background: #2563eb;
+        color: #ffffff;
+      }
+    }
+  }
+}

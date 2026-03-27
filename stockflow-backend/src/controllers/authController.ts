@@ -84,6 +84,107 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 };
 
+export const registerCompany = async (req: Request, res: Response): Promise<void> => {
+    const connection = await pool.getConnection();
+
+    try {
+        const {
+            company_name,
+            tax_id,
+            company_email,
+            phone,
+            address,
+            admin_name,
+            admin_email,
+            admin_password
+        } = req.body as {
+            company_name: string;
+            tax_id?: string;
+            company_email?: string;
+            phone?: string;
+            address?: string;
+            admin_name: string;
+            admin_email: string;
+            admin_password: string;
+        };
+
+        if (!company_name || company_name.trim() === '') {
+            res.status(400).json({ message: 'El nombre de la empresa es obligatorio' });
+            return;
+        }
+
+        if (!admin_name || admin_name.trim() === '') {
+            res.status(400).json({ message: 'El nombre del administrador es obligatorio' });
+            return;
+        }
+
+        if (!admin_email || admin_email.trim() === '') {
+            res.status(400).json({ message: 'El email del administrador es obligatorio' });
+            return;
+        }
+
+        if (!admin_password || admin_password.trim() === '') {
+            res.status(400).json({ message: 'La contraseña del administrador es obligatoria' });
+            return;
+        }
+
+        const [existingUserRows] = await connection.query<RowDataPacket[]>(
+            'SELECT id FROM users WHERE email = ?',
+            [admin_email]
+        );
+
+        if (existingUserRows.length > 0) {
+            res.status(409).json({ message: 'Ya existe un usuario con ese email' });
+            return;
+        }
+
+        await connection.beginTransaction();
+
+        const [companyResult] = await connection.query<ResultSetHeader>(
+            `
+      INSERT INTO companies (name, tax_id, email, phone, address, status)
+      VALUES (?, ?, ?, ?, ?, 'active')
+      `,
+            [
+                company_name,
+                tax_id ?? null,
+                company_email ?? null,
+                phone ?? null,
+                address ?? null
+            ]
+        );
+
+        const companyId = companyResult.insertId;
+
+        const hashedPassword = await bcrypt.hash(admin_password, 10);
+
+        await connection.query<ResultSetHeader>(
+            `
+      INSERT INTO users (name, email, password, role, company_id)
+      VALUES (?, ?, ?, 'company_admin', ?)
+      `,
+            [
+                admin_name,
+                admin_email,
+                hashedPassword,
+                companyId
+            ]
+        );
+
+        await connection.commit();
+
+        res.status(201).json({
+            message: 'Empresa registrada correctamente. Ya puedes iniciar sesión.'
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error registering company:', error);
+        res.status(500).json({ message: 'Error al registrar la empresa' });
+    } finally {
+        connection.release();
+    }
+};
+
 export const login = async (req: Request, res: Response): Promise<void> => {
     try {
         const { email, password } = req.body as { email: string; password: string };

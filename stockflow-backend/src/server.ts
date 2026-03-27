@@ -1,13 +1,10 @@
 import dotenv from 'dotenv';
 dotenv.config({ override: true });
 
-import express from 'express';
+import app from './app';
 import pool from './config/db';
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(express.json());
+const PORT = process.env.PORT;
 
 async function startServer() {
   try {
