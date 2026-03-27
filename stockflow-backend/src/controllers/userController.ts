@@ -1,15 +1,19 @@
 import { Request, Response } from 'express';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import bcrypt from 'bcryptjs';
 import pool from '../config/db';
 import { User } from '../types/user';
-import bcrypt from 'bcryptjs';
 
 interface UserRow extends User, RowDataPacket { }
 
-export const getUsers = async (_req: Request, res: Response): Promise<void> => {
+export const getUsers = async (req: Request, res: Response): Promise<void> => {
     try {
-        const [rows] = await pool.query<UserRow[]>(
-            `
+        if (!req.user) {
+            res.status(401).json({ message: 'No autenticado' });
+            return;
+        }
+
+        let query = `
       SELECT 
         u.id,
         u.name,
@@ -18,9 +22,18 @@ export const getUsers = async (_req: Request, res: Response): Promise<void> => {
         u.company_id,
         u.created_at
       FROM users u
-      ORDER BY u.id DESC
-      `
-        );
+    `;
+
+        let params: (string | number | null)[] = [];
+
+        if (req.user.role === 'company_admin') {
+            query += ` WHERE u.company_id = ?`;
+            params.push(req.user.company_id ?? null);
+        }
+
+        query += ` ORDER BY u.id DESC`;
+
+        const [rows] = await pool.query<UserRow[]>(query, params);
 
         res.status(200).json(rows);
     } catch (error) {
@@ -31,6 +44,11 @@ export const getUsers = async (_req: Request, res: Response): Promise<void> => {
 
 export const getUserById = async (req: Request, res: Response): Promise<void> => {
     try {
+        if (!req.user) {
+            res.status(401).json({ message: 'No autenticado' });
+            return;
+        }
+
         const { id } = req.params;
 
         const [rows] = await pool.query<UserRow[]>(
@@ -53,7 +71,18 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
             return;
         }
 
-        res.status(200).json(rows[0]);
+        const targetUser = rows[0];
+
+        const isSuperAdmin = req.user.role === 'super_admin';
+        const isSameCompany = req.user.company_id === targetUser.company_id;
+        const isOwnProfile = req.user.id === targetUser.id;
+
+        if (!isSuperAdmin && !isSameCompany && !isOwnProfile) {
+            res.status(403).json({ message: 'No tienes permisos para ver este usuario' });
+            return;
+        }
+
+        res.status(200).json(targetUser);
     } catch (error) {
         console.error('Error getting user by id:', error);
         res.status(500).json({ message: 'Error al obtener el usuario' });
@@ -62,6 +91,11 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
 
 export const createUser = async (req: Request, res: Response): Promise<void> => {
     try {
+        if (!req.user) {
+            res.status(401).json({ message: 'No autenticado' });
+            return;
+        }
+
         const { name, email, password, role, company_id } = req.body as User;
 
         if (!name || name.trim() === '') {
@@ -89,10 +123,16 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
             return;
         }
 
-        if (company_id) {
+        let finalCompanyId: number | null = company_id ?? null;
+
+        if (req.user.role === 'company_admin') {
+            finalCompanyId = req.user.company_id ?? null;
+        }
+
+        if (finalCompanyId) {
             const [companyRows] = await pool.query<RowDataPacket[]>(
                 'SELECT id FROM companies WHERE id = ?',
-                [company_id]
+                [finalCompanyId]
             );
 
             if (companyRows.length === 0) {
@@ -101,19 +141,25 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
             }
         }
 
+        let finalRole = role ?? 'employee';
+
+        if (req.user.role === 'company_admin') {
+            finalRole = 'employee';
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const [result] = await pool.query<ResultSetHeader>(
             `
-  INSERT INTO users (name, email, password, role, company_id)
-  VALUES (?, ?, ?, ?, ?)
-  `,
+      INSERT INTO users (name, email, password, role, company_id)
+      VALUES (?, ?, ?, ?, ?)
+      `,
             [
                 name,
                 email,
                 hashedPassword,
-                role ?? 'employee',
-                company_id ?? null
+                finalRole,
+                finalCompanyId
             ]
         );
 
@@ -144,6 +190,11 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
     try {
+        if (!req.user) {
+            res.status(401).json({ message: 'No autenticado' });
+            return;
+        }
+
         const { id } = req.params;
         const { name, email, password, role, company_id } = req.body as User;
 
@@ -157,6 +208,16 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
             return;
         }
 
+        const existingUser = existingRows[0];
+
+        const isSuperAdmin = req.user.role === 'super_admin';
+        const isSameCompany = req.user.company_id === existingUser.company_id;
+
+        if (!isSuperAdmin && !isSameCompany) {
+            res.status(403).json({ message: 'No puedes editar usuarios de otra empresa' });
+            return;
+        }
+
         if (!name || name.trim() === '') {
             res.status(400).json({ message: 'El nombre es obligatorio' });
             return;
@@ -164,11 +225,6 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
 
         if (!email || email.trim() === '') {
             res.status(400).json({ message: 'El email es obligatorio' });
-            return;
-        }
-
-        if (!password || password.trim() === '') {
-            res.status(400).json({ message: 'La contraseña es obligatoria' });
             return;
         }
 
@@ -182,10 +238,16 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
             return;
         }
 
-        if (company_id) {
+        let finalCompanyId: number | null = company_id ?? existingUser.company_id ?? null;
+
+        if (req.user.role === 'company_admin') {
+            finalCompanyId = req.user.company_id ?? null;
+        }
+
+        if (finalCompanyId) {
             const [companyRows] = await pool.query<RowDataPacket[]>(
                 'SELECT id FROM companies WHERE id = ?',
-                [company_id]
+                [finalCompanyId]
             );
 
             if (companyRows.length === 0) {
@@ -194,20 +256,30 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
             }
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        let finalRole = role ?? existingUser.role ?? 'employee';
+
+        if (req.user.role === 'company_admin') {
+            finalRole = existingUser.role === 'super_admin' ? existingUser.role : 'employee';
+        }
+
+        let finalPassword = existingUser.password;
+
+        if (password && password.trim() !== '') {
+            finalPassword = await bcrypt.hash(password, 10);
+        }
 
         await pool.query<ResultSetHeader>(
             `
-  UPDATE users
-  SET name = ?, email = ?, password = ?, role = ?, company_id = ?
-  WHERE id = ?
-  `,
+      UPDATE users
+      SET name = ?, email = ?, password = ?, role = ?, company_id = ?
+      WHERE id = ?
+      `,
             [
                 name,
                 email,
-                hashedPassword,
-                role ?? 'employee',
-                company_id ?? null,
+                finalPassword,
+                finalRole,
+                finalCompanyId,
                 id
             ]
         );
@@ -239,15 +311,30 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
 
 export const deleteUser = async (req: Request, res: Response): Promise<void> => {
     try {
+        if (!req.user) {
+            res.status(401).json({ message: 'No autenticado' });
+            return;
+        }
+
         const { id } = req.params;
 
         const [existingRows] = await pool.query<UserRow[]>(
-            'SELECT id FROM users WHERE id = ?',
+            'SELECT * FROM users WHERE id = ?',
             [id]
         );
 
         if (existingRows.length === 0) {
             res.status(404).json({ message: 'Usuario no encontrado' });
+            return;
+        }
+
+        const targetUser = existingRows[0];
+
+        const isSuperAdmin = req.user.role === 'super_admin';
+        const isSameCompany = req.user.company_id === targetUser.company_id;
+
+        if (!isSuperAdmin && !isSameCompany) {
+            res.status(403).json({ message: 'No puedes eliminar usuarios de otra empresa' });
             return;
         }
 
