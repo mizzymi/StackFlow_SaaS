@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import pool from '../config/db';
 import { User } from '../types/user';
+import bcrypt from 'bcryptjs';
 
 interface UserRow extends User, RowDataPacket { }
 
@@ -100,15 +101,17 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
             }
         }
 
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const [result] = await pool.query<ResultSetHeader>(
             `
-      INSERT INTO users (name, email, password, role, company_id)
-      VALUES (?, ?, ?, ?, ?)
-      `,
+  INSERT INTO users (name, email, password, role, company_id)
+  VALUES (?, ?, ?, ?, ?)
+  `,
             [
                 name,
                 email,
-                password,
+                hashedPassword,
                 role ?? 'employee',
                 company_id ?? null
             ]
@@ -191,16 +194,18 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
             }
         }
 
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         await pool.query<ResultSetHeader>(
             `
-      UPDATE users
-      SET name = ?, email = ?, password = ?, role = ?, company_id = ?
-      WHERE id = ?
-      `,
+  UPDATE users
+  SET name = ?, email = ?, password = ?, role = ?, company_id = ?
+  WHERE id = ?
+  `,
             [
                 name,
                 email,
-                password,
+                hashedPassword,
                 role ?? 'employee',
                 company_id ?? null,
                 id

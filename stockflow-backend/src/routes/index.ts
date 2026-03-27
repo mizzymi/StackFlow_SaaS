@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import companyRoutes from './companyRoutes';
 import userRoutes from './userRoutes';
+import authRoutes from './authRoutes';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.get('/health', (_req: Request, res: Response) => {
   });
 });
 
+router.use('/auth', authRoutes);
 router.use('/companies', companyRoutes);
 router.use('/users', userRoutes);
 
