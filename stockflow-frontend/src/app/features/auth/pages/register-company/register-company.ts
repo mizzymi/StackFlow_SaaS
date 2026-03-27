@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -16,9 +16,9 @@ export class RegisterCompany {
   private authService = inject(AuthService);
   private router = inject(Router);
 
-  isLoading = false;
-  successMessage = '';
-  errorMessage = '';
+  errorMessage = signal('');
+  successMessage = signal('');
+  isLoading = signal(false);
 
   registerForm = this.fb.group({
     company_name: ['', [Validators.required]],
@@ -37,9 +37,9 @@ export class RegisterCompany {
       return;
     }
 
-    this.isLoading = true;
-    this.successMessage = '';
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
 
     const formValue = this.registerForm.getRawValue();
 
@@ -54,8 +54,8 @@ export class RegisterCompany {
       admin_password: formValue.admin_password ?? ''
     }).subscribe({
       next: (response) => {
-        this.isLoading = false;
-        this.successMessage = response.message;
+        this.isLoading.set(false);
+        this.successMessage.set(response.message);
         this.registerForm.reset();
 
         setTimeout(() => {
@@ -63,8 +63,10 @@ export class RegisterCompany {
         }, 1500);
       },
       error: (error) => {
-        this.isLoading = false;
-        this.errorMessage = error?.error?.message || 'No se pudo registrar la empresa';
+        this.isLoading.set(false);
+        this.errorMessage.set(
+          error?.error?.message || 'No se pudo iniciar sesión'
+        );
       }
     });
   }

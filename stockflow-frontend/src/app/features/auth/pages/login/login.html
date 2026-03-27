@@ -22,17 +22,17 @@
         }
       </div>
 
-      @if (errorMessage) {
+      @if (errorMessage()) {
         <div class="server-error">
-          {{ errorMessage }}
+          {{ errorMessage() }}
         </div>
       }
       <div class="login__footer">
         <span>¿No tienes empresa todavía?</span>
         <a routerLink="/register-company">Registrar empresa</a>
       </div>
-      <button type="submit" [disabled]="isLoading">
-        {{ isLoading ? 'Entrando...' : 'Entrar' }}
+      <button type="submit" [disabled]="isLoading()">
+        {{ isLoading() ? 'Entrando...' : 'Entrar' }}
       </button>
     </form>
   </div>

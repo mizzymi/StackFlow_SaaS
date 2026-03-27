@@ -6,6 +6,7 @@ import productRoutes from './productRoutes';
 import categoryRoutes from './categoryRoutes';
 import supplierRoutes from './supplierRoutes';
 import inventoryMovementRoutes from './inventory-movementRoutes';
+import dashboardRoutes from './dashboardRoutes';
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/suppliers', supplierRoutes);
 router.use('/inventory-movements', inventoryMovementRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 export default router;

@@ -104,20 +104,20 @@
         }
       </div>
 
-      @if (successMessage) {
+      @if (successMessage()) {
         <div class="server-success">
-          {{ successMessage }}
+          {{ successMessage() }}
         </div>
       }
 
-      @if (errorMessage) {
+      @if (errorMessage()) {
         <div class="server-error">
-          {{ errorMessage }}
+          {{ errorMessage() }}
         </div>
       }
 
-      <button type="submit" [disabled]="isLoading">
-        {{ isLoading ? 'Registrando...' : 'Registrar empresa' }}
+      <button type="submit" [disabled]="isLoading()">
+        {{ isLoading() ? 'Registrando...' : 'Registrar empresa' }}
       </button>
 
       <div class="register-company__footer">

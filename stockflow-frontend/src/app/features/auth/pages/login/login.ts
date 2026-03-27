@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -16,8 +16,8 @@ export class Login {
   private authService = inject(AuthService);
   private router = inject(Router);
 
-  errorMessage = '';
-  isLoading = false;
+  errorMessage = signal('');
+  isLoading = signal(false);
 
   loginForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -30,8 +30,8 @@ export class Login {
       return;
     }
 
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
 
     const { email, password } = this.loginForm.getRawValue();
 
@@ -40,12 +40,14 @@ export class Login {
       password: password ?? ''
     }).subscribe({
       next: () => {
-        this.isLoading = false;
+        this.isLoading.set(false);
         this.router.navigate(['/dashboard']);
       },
       error: (error) => {
-        this.isLoading = false;
-        this.errorMessage = error?.error?.message || 'No se pudo iniciar sesión';
+        this.isLoading.set(false);
+        this.errorMessage.set(
+          error?.error?.message || 'No se pudo iniciar sesión'
+        );
       }
     });
   }

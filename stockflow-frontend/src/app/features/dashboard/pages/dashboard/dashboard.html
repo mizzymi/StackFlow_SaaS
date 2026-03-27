@@ -1,28 +1,140 @@
 <section class="dashboard">
   <div class="dashboard__header">
-    <h2>Dashboard</h2>
-    <p>Resumen general del sistema</p>
+    <div>
+      <h2>Dashboard</h2>
+      <p>Resumen general del sistema</p>
+    </div>
+
+    <button class="refresh-btn" (click)="loadDashboard()" [disabled]="isLoading()">
+      {{ isLoading() ? 'Cargando...' : 'Actualizar' }}
+    </button>
   </div>
 
-  <div class="stats">
-    <article class="card">
-      <h3>Empresas</h3>
-      <strong>12</strong>
-    </article>
+  @if (isLoading()) {
+    <div class="dashboard-state">
+      <p>Cargando dashboard...</p>
+    </div>
+  }
 
-    <article class="card">
-      <h3>Usuarios</h3>
-      <strong>84</strong>
-    </article>
+  @if (!isLoading() && errorMessage()) {
+    <div class="dashboard-state dashboard-state--error">
+      <p>{{ errorMessage() }}</p>
+    </div>
+  }
 
-    <article class="card">
-      <h3>Productos</h3>
-      <strong>320</strong>
-    </article>
+  @if (!isLoading() && data(); as dashboardData) {
+    <div class="stats-grid">
+      <app-stat-card
+        title="Usuarios"
+        [value]="dashboardData.summary.total_users"
+        hint="Usuarios registrados"
+      />
 
-    <article class="card">
-      <h3>Stock bajo</h3>
-      <strong>9</strong>
-    </article>
-  </div>
+      <app-stat-card
+        title="Productos"
+        [value]="dashboardData.summary.total_products"
+        hint="Productos en inventario"
+      />
+
+      <app-stat-card
+        title="Categorías"
+        [value]="dashboardData.summary.total_categories"
+        hint="Categorías activas"
+      />
+
+      <app-stat-card
+        title="Proveedores"
+        [value]="dashboardData.summary.total_suppliers"
+        hint="Proveedores disponibles"
+      />
+
+      <app-stat-card
+        title="Stock bajo"
+        [value]="dashboardData.summary.low_stock_products"
+        hint="Productos con pocas unidades"
+      />
+    </div>
+
+    <div class="dashboard-panels">
+      <section class="panel">
+        <div class="panel__header">
+          <h3>Productos con stock bajo</h3>
+          <span>{{ dashboardData.lowStockProducts.length }} resultados</span>
+        </div>
+
+        @if (dashboardData.lowStockProducts.length === 0) {
+          <div class="empty-state">No hay productos con stock bajo.</div>
+        } @else {
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>SKU</th>
+                  <th>Stock</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (product of dashboardData.lowStockProducts; track product.id) {
+                  <tr>
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.sku || '—' }}</td>
+                    <td>
+                      <span class="stock-badge">{{ product.stock }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <section class="panel">
+        <div class="panel__header">
+          <h3>Últimos movimientos</h3>
+          <span>{{ dashboardData.recentMovements.length }} movimientos</span>
+        </div>
+
+        @if (dashboardData.recentMovements.length === 0) {
+          <div class="empty-state">Aún no hay movimientos registrados.</div>
+        } @else {
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Usuario</th>
+                  <th>Tipo</th>
+                  <th>Cantidad</th>
+                  <th>Motivo</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (movement of dashboardData.recentMovements; track movement.id) {
+                  <tr>
+                    <td>{{ movement.product_name }}</td>
+                    <td>{{ movement.user_name }}</td>
+                    <td>
+                      <span
+                        class="type-badge"
+                        [class.type-badge--in]="movement.type === 'in'"
+                        [class.type-badge--out]="movement.type === 'out'"
+                      >
+                        {{ getMovementLabel(movement.type) }}
+                      </span>
+                    </td>
+                    <td>{{ movement.quantity }}</td>
+                    <td>{{ movement.reason || '—' }}</td>
+                    <td>{{ movement.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    </div>
+  }
 </section>
