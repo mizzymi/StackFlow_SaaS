@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import {
-  getCompanies,
-  getCompanyById,
-  createCompany,
-  updateCompany,
-  deleteCompany
+    getCompanies,
+    getCompanyById,
+    createCompany,
+    updateCompany,
+    deleteCompany
 } from '../controllers/companyController';
 
 const router = Router();
