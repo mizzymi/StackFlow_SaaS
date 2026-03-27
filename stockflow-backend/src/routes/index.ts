@@ -1,17 +1,20 @@
 import { Router, Request, Response } from 'express';
+import companyRoutes from './companyRoutes';
 
 const router = Router();
 
-router.get('/', (req: Request, res: Response) => {
+router.get('/', (_req: Request, res: Response) => {
   res.json({
     message: 'API StockFlow funcionando con TypeScript'
   });
 });
 
-router.get('/health', (req: Request, res: Response) => {
+router.get('/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok'
   });
 });
+
+router.use('/companies', companyRoutes)
 
 export default router;
